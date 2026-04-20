@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Cloud shape -->
+  <path d="M8 24h16a6 6 0 0 0 1.5-11.8A8 8 0 0 0 10 10a8 8 0 0 0-.5 2A5 5 0 0 0 8 24Z" fill="#6366f1"/>
+  <!-- Soundwave bars -->
+  <rect x="12" y="14" width="2" height="7" rx="1" fill="white"/>
+  <rect x="15" y="12" width="2" height="9" rx="1" fill="white"/>
+  <rect x="18" y="14" width="2" height="7" rx="1" fill="white"/>
+</svg>
