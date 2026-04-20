@@ -1,0 +1,9 @@
+{
+  "project_name": "ultra",
+  "detected_stack": {
+    "framework": "nextjs",
+    "providers": [
+      "vercel"
+    ]
+  }
+}

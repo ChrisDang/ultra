@@ -1,7 +1,16 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  async redirects() {
+    return [
+      {
+        source: "/install",
+        destination:
+          "https://raw.githubusercontent.com/ChrisDang/vibecloud-releases/main/install.sh",
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
