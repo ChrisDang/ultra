@@ -1,5 +1,22 @@
 @AGENTS.md
 
+## Monorepo Structure
+
+This is a monorepo with three components:
+
+- **Root (`/`)** — Next.js marketing site + dashboard
+- **`cli/`** — Go CLI (vibecloud binary). Module: `github.com/christopherdang/vibecloud/cli`
+- **`api/`** — Go backend deployed as a Vercel Function (coming later)
+
+### Building the CLI
+```sh
+cd cli && go build -ldflags="-s -w" -o vibecloud .
+```
+
+### Building the Next.js site
+```sh
+npm run build
+```
 
 ## Deployment (VibeCloud)
 

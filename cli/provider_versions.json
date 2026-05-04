@@ -1,0 +1,35 @@
+{
+  "description": "Tracks the provider CLI versions vibecloud has been tested against. Updated by /update-provider-clis.",
+  "providers": {
+    "vercel": {
+      "binary": "vercel",
+      "tested_version": "39.0.0",
+      "min_version": "39.0.0",
+      "max_tested_version": "39.0.0",
+      "update_command": "npm i -g vercel@latest",
+      "registry": "npm",
+      "package_name": "vercel",
+      "releases_url": "https://github.com/vercel/vercel/releases"
+    },
+    "supabase": {
+      "binary": "supabase",
+      "tested_version": "2.0.0",
+      "min_version": "2.0.0",
+      "max_tested_version": "2.0.0",
+      "update_command": "brew upgrade supabase",
+      "registry": "github",
+      "package_name": "supabase/cli",
+      "releases_url": "https://github.com/supabase/cli/releases"
+    },
+    "eas": {
+      "binary": "eas",
+      "tested_version": "13.0.0",
+      "min_version": "13.0.0",
+      "max_tested_version": "13.0.0",
+      "update_command": "npm i -g eas-cli@latest",
+      "registry": "npm",
+      "package_name": "eas-cli",
+      "releases_url": "https://github.com/expo/eas-cli/releases"
+    }
+  }
+}
