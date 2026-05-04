@@ -17,9 +17,17 @@ type CLIInfo struct {
 	LoggedIn  bool `json:"logged_in"`
 }
 
+// DefaultAPIBaseURL is the default VibeCloud API URL used when none is configured.
+const DefaultAPIBaseURL = "https://www.vibecloudai.com"
+
 // Config holds the CLI configuration persisted in ~/.vibecloud/config.json.
 type Config struct {
-	CLIStatus map[string]CLIInfo `json:"cli_status,omitempty"`
+	CLIStatus    map[string]CLIInfo `json:"cli_status,omitempty"`
+	AccessToken  string             `json:"access_token,omitempty"`
+	RefreshToken string             `json:"refresh_token,omitempty"`
+	APIBaseURL   string             `json:"api_base_url,omitempty"`
+	UserEmail    string             `json:"user_email,omitempty"`
+	UserTier     string             `json:"user_tier,omitempty"`
 }
 
 // ConfigPath returns the absolute path to the config file.
