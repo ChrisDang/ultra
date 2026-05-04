@@ -86,6 +86,10 @@ func setup() {
 	deviceCodeService := service.NewDeviceCodeService(deviceCodeRepo, authService)
 	deviceCodeHandler := authhandler.NewDeviceCodeHandler(deviceCodeService)
 
+	deployLogRepo := repository.NewDeployLogRepository(pool)
+	deployService := service.NewDeployService(deployLogRepo)
+	deployHandler := authhandler.NewDeployHandler(deployService)
+
 	// Public auth routes (no JWT required)
 	r.Route("/api/v1/auth", func(r chi.Router) {
 		r.Use(httprate.LimitByIP(10, time.Minute))
@@ -106,6 +110,8 @@ func setup() {
 		r.Use(authMiddleware.Authenticate)
 		r.Get("/me", authH.Me)
 		r.Patch("/tier", authH.UpdateTier)
+		r.Post("/deploys/check", deployHandler.CheckLimit)
+		r.Post("/deploys/log", deployHandler.LogDeploy)
 	})
 
 	router = r
