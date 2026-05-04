@@ -1,4 +1,7 @@
 {
+  "functions": {
+    "api/v1.go": {}
+  },
   "rewrites": [
     {
       "source": "/api/v1/:path*",
