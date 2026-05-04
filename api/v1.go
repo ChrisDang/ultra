@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -71,7 +70,7 @@ func setup() {
 		ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
 		defer cancel()
 		if err := pool.Ping(ctx); err != nil {
-			response.Error(w, 503, "DB_UNHEALTHY", fmt.Sprintf("database ping failed: %v", err))
+			response.Error(w, 503, "DB_UNHEALTHY", "database ping failed")
 			return
 		}
 		response.JSON(w, 200, map[string]string{"status": "ok"})
