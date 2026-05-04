@@ -114,6 +114,18 @@ func (c *Client) CheckDeployLimit(projectName string, providers []string, enviro
 	return result.Allowed, result.Used, result.Limit, nil
 }
 
+// LogDeploy records a deploy event on the server.
+func (c *Client) LogDeploy(projectName string, providers []string, environment, status string) error {
+	payload := map[string]interface{}{
+		"project_name": projectName,
+		"providers":    providers,
+		"environment":  environment,
+		"status":       status,
+	}
+	_, err := c.doRequest("POST", "/api/v1/deploys/log", payload)
+	return err
+}
+
 // doRequest makes an authenticated HTTP request and unwraps the API envelope.
 func (c *Client) doRequest(method, path string, payload interface{}) (json.RawMessage, error) {
 	var bodyReader io.Reader

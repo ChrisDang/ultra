@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/christopherdang/vibecloud/cli/internal/api"
+	"github.com/christopherdang/vibecloud/cli/internal/config"
 	vexec "github.com/christopherdang/vibecloud/cli/internal/exec"
 	"github.com/christopherdang/vibecloud/cli/internal/output"
 	"github.com/spf13/cobra"
@@ -48,6 +50,9 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
+	// Load CLI config for auth state (used for pre-deploy check and post-deploy log)
+	cfg, cfgErr := config.Load()
+
 	providers := projCfg.DetectedStack.Providers
 	if deployProvider != "" {
 		if _, ok := cliForProvider[deployProvider]; !ok {
@@ -60,6 +65,37 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 			return nil
 		}
 		providers = []string{deployProvider}
+	}
+
+	// Pre-deploy limit check
+	if cfgErr == nil && cfg.AccessToken != "" {
+		baseURL := cfg.APIBaseURL
+		if baseURL == "" {
+			baseURL = config.DefaultAPIBaseURL
+		}
+		environment := "preview"
+		if deployProd {
+			environment = "production"
+		}
+		client := api.NewClient(baseURL, cfg.AccessToken, cfg.RefreshToken)
+		allowed, used, limit, checkErr := client.CheckDeployLimit(
+			projCfg.ProjectName,
+			providers,
+			environment,
+		)
+		if checkErr != nil {
+			output.Warn("", fmt.Sprintf("Deploy limit check failed: %s (proceeding anyway)", checkErr))
+		} else if !allowed {
+			output.PrintErrorWithRecovery(
+				fmt.Sprintf("Deploy limit reached: %d/%d deploys used this month", used, limit),
+				output.ErrDeployFailed,
+				fmt.Sprintf("You've used %d of %d free deploys this month. Run 'vibecloud auth upgrade' for unlimited deploys.", used, limit),
+				&output.Recovery{Command: "vibecloud auth upgrade", AutoRecoverable: false},
+			)
+			return nil
+		}
+	} else {
+		output.Warn("", "Deploy tracking disabled — run 'vibecloud auth login' to track usage and unlock premium features.")
 	}
 
 	results := map[string]string{}
@@ -164,6 +200,26 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 			allOk = false
 			break
 		}
+	}
+
+	// Log deploy (fire-and-forget)
+	if cfgErr == nil && cfg.AccessToken != "" {
+		baseURL := cfg.APIBaseURL
+		if baseURL == "" {
+			baseURL = config.DefaultAPIBaseURL
+		}
+		environment := "preview"
+		if deployProd {
+			environment = "production"
+		}
+		status := "completed"
+		if !allOk {
+			status = "failed"
+		}
+		logClient := api.NewClient(baseURL, cfg.AccessToken, cfg.RefreshToken)
+		go func() {
+			_ = logClient.LogDeploy(projCfg.ProjectName, providers, environment, status)
+		}()
 	}
 
 	instructions := output.BuildDeployInstructions(results)
