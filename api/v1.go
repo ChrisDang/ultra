@@ -82,12 +82,23 @@ func setup() {
 	authH := authhandler.NewAuthHandler(authService)
 	authMiddleware := auth.NewMiddleware(cfg.JWTSigningSecret)
 
+	deviceCodeRepo := repository.NewDeviceCodeRepository(pool)
+	deviceCodeService := service.NewDeviceCodeService(deviceCodeRepo, authService)
+	deviceCodeHandler := authhandler.NewDeviceCodeHandler(deviceCodeService)
+
 	// Public auth routes (no JWT required)
 	r.Route("/api/v1/auth", func(r chi.Router) {
 		r.Use(httprate.LimitByIP(10, time.Minute))
 		r.Post("/register", authH.Register)
 		r.Post("/login", authH.Login)
 		r.Post("/refresh", authH.Refresh)
+		r.Post("/device-code/exchange", deviceCodeHandler.Exchange)
+
+		// Protected device code generation (nested inside auth group)
+		r.Group(func(r chi.Router) {
+			r.Use(authMiddleware.Authenticate)
+			r.Post("/device-code", deviceCodeHandler.Generate)
+		})
 	})
 
 	// Protected routes (JWT required)
