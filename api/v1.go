@@ -14,8 +14,12 @@ import (
 	"github.com/go-chi/httprate"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/christopherdang/vibecloud/api/internal/auth"
 	"github.com/christopherdang/vibecloud/api/internal/config"
+	authhandler "github.com/christopherdang/vibecloud/api/internal/handler"
+	"github.com/christopherdang/vibecloud/api/internal/repository"
 	"github.com/christopherdang/vibecloud/api/internal/response"
+	"github.com/christopherdang/vibecloud/api/internal/service"
 )
 
 var (
@@ -72,10 +76,25 @@ func setup() {
 		response.JSON(w, 200, map[string]string{"status": "ok"})
 	})
 
-	// Public auth routes placeholder (will be wired in Task 5)
+	// Dependency wiring
+	userRepo := repository.NewUserRepository(pool)
+	authService := service.NewAuthService(userRepo, cfg.JWTSigningSecret)
+	authH := authhandler.NewAuthHandler(authService)
+	authMiddleware := auth.NewMiddleware(cfg.JWTSigningSecret)
+
+	// Public auth routes (no JWT required)
 	r.Route("/api/v1/auth", func(r chi.Router) {
 		r.Use(httprate.LimitByIP(10, time.Minute))
-		// Handlers registered in Task 5
+		r.Post("/register", authH.Register)
+		r.Post("/login", authH.Login)
+		r.Post("/refresh", authH.Refresh)
+	})
+
+	// Protected routes (JWT required)
+	r.Route("/api/v1", func(r chi.Router) {
+		r.Use(authMiddleware.Authenticate)
+		r.Get("/me", authH.Me)
+		r.Patch("/tier", authH.UpdateTier)
 	})
 
 	router = r
