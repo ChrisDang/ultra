@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/christopherdang/vibecloud/api/internal/auth"
-	"github.com/christopherdang/vibecloud/api/internal/response"
-	"github.com/christopherdang/vibecloud/api/internal/service"
+	"github.com/christopherdang/vibecloud/backend/auth"
+	"github.com/christopherdang/vibecloud/backend/response"
+	"github.com/christopherdang/vibecloud/backend/service"
 )
 
 type DeviceCodeHandler struct {

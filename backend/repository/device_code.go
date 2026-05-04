@@ -7,7 +7,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/christopherdang/vibecloud/api/internal/model"
+	"github.com/christopherdang/vibecloud/backend/model"
 )
 
 type DeviceCodeRepository struct {

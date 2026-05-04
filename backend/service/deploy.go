@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/christopherdang/vibecloud/api/internal/repository"
+	"github.com/christopherdang/vibecloud/backend/repository"
 )
 
 const freeDeployLimit = 15

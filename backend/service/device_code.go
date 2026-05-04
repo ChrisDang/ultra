@@ -9,8 +9,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/christopherdang/vibecloud/api/internal/model"
-	"github.com/christopherdang/vibecloud/api/internal/repository"
+	"github.com/christopherdang/vibecloud/backend/model"
+	"github.com/christopherdang/vibecloud/backend/repository"
 )
 
 const codeChars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789" // no I, O, 0, 1 to avoid confusion

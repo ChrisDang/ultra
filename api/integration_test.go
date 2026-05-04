@@ -19,11 +19,11 @@ import (
 	chimw "github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/christopherdang/vibecloud/api/internal/auth"
-	authhandler "github.com/christopherdang/vibecloud/api/internal/handler"
-	"github.com/christopherdang/vibecloud/api/internal/repository"
-	"github.com/christopherdang/vibecloud/api/internal/response"
-	"github.com/christopherdang/vibecloud/api/internal/service"
+	"github.com/christopherdang/vibecloud/backend/auth"
+	authhandler "github.com/christopherdang/vibecloud/backend/handler"
+	"github.com/christopherdang/vibecloud/backend/repository"
+	"github.com/christopherdang/vibecloud/backend/response"
+	"github.com/christopherdang/vibecloud/backend/service"
 )
 
 var (
@@ -53,7 +53,7 @@ func TestMain(m *testing.M) {
 	}
 
 	// Run migration
-	migrationSQL, err := os.ReadFile("migrations/001_create_schema.sql")
+	migrationSQL, err := os.ReadFile("../backend/migrations/001_create_schema.sql")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to read migration: %v\n", err)
 		os.Exit(1)

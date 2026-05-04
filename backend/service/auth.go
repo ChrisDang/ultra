@@ -9,8 +9,8 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/christopherdang/vibecloud/api/internal/model"
-	"github.com/christopherdang/vibecloud/api/internal/repository"
+	"github.com/christopherdang/vibecloud/backend/model"
+	"github.com/christopherdang/vibecloud/backend/repository"
 )
 
 const (

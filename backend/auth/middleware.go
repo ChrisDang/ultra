@@ -8,7 +8,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 
-	"github.com/christopherdang/vibecloud/api/internal/response"
+	"github.com/christopherdang/vibecloud/backend/response"
 )
 
 type contextKey string

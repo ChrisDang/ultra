@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -14,12 +15,12 @@ import (
 	"github.com/go-chi/httprate"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/christopherdang/vibecloud/api/internal/auth"
-	"github.com/christopherdang/vibecloud/api/internal/config"
-	authhandler "github.com/christopherdang/vibecloud/api/internal/handler"
-	"github.com/christopherdang/vibecloud/api/internal/repository"
-	"github.com/christopherdang/vibecloud/api/internal/response"
-	"github.com/christopherdang/vibecloud/api/internal/service"
+	"github.com/christopherdang/vibecloud/backend/auth"
+	"github.com/christopherdang/vibecloud/backend/config"
+	authhandler "github.com/christopherdang/vibecloud/backend/handler"
+	"github.com/christopherdang/vibecloud/backend/repository"
+	"github.com/christopherdang/vibecloud/backend/response"
+	"github.com/christopherdang/vibecloud/backend/service"
 )
 
 var (
@@ -70,7 +71,7 @@ func setup() {
 		ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
 		defer cancel()
 		if err := pool.Ping(ctx); err != nil {
-			response.Error(w, 503, "DB_UNHEALTHY", "database ping failed")
+			response.Error(w, 503, "DB_UNHEALTHY", fmt.Sprintf("database ping failed: %v", err))
 			return
 		}
 		response.JSON(w, 200, map[string]string{"status": "ok"})
