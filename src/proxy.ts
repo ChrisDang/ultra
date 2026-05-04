@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 const protectedRoutes = ["/dashboard"];
 const authRoutes = ["/login"];
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:8080");
 const IS_DEV = process.env.NODE_ENV === "development";
 
 function isTokenExpired(token: string): boolean {
