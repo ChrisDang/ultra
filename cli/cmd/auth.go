@@ -237,7 +237,8 @@ func runAuthUpgrade(cmd *cobra.Command, args []string) error {
 	// Show alpha disclaimer.
 	fmt.Fprintln(os.Stderr, "\nPremium is in alpha preview.")
 	fmt.Fprintln(os.Stderr, "  When premium launches with billing, your tier will revert to free.")
-	fmt.Fprintln(os.Stderr, "  Your snapshots and configuration will be preserved.\n")
+	fmt.Fprintln(os.Stderr, "  Your snapshots and configuration will be preserved.")
+	fmt.Fprintln(os.Stderr)
 
 	if !flagYes {
 		fmt.Fprintf(os.Stderr, "Continue? (y/N): ")
