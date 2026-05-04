@@ -1,6 +1,8 @@
 {
   "functions": {
-    "api/v1.go": {}
+    "api/v1.go": {
+      "maxDuration": 30
+    }
   },
   "rewrites": [
     {
