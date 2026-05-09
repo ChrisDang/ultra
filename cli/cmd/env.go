@@ -11,6 +11,7 @@ import (
 
 	vexec "github.com/christopherdang/vibecloud/cli/internal/exec"
 	"github.com/christopherdang/vibecloud/cli/internal/output"
+	supa "github.com/christopherdang/vibecloud/cli/internal/supabase"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -258,6 +259,44 @@ func runEnvSync(cmd *cobra.Command, args []string) error {
 
 	supabaseURL := fmt.Sprintf("https://%s.supabase.co", ref)
 
+	// Discover pooler for DATABASE_URL.
+	var databaseURL string
+	info, infoErr := supa.GetProjectInfo(ctx, ref)
+	if infoErr != nil {
+		fmt.Fprintf(os.Stderr, "Warning: could not fetch project info: %s. Skipping DATABASE_URL.\n", infoErr)
+	} else if info.IsPaused() {
+		fmt.Fprintf(os.Stderr, "Warning: project is paused. Skipping DATABASE_URL. Unpause first: supabase projects unpause --project-ref %s\n", ref)
+	} else if info.IsStartingUp() {
+		fmt.Fprintf(os.Stderr, "Warning: project is starting up. Pooler may not be ready. Skipping DATABASE_URL.\n")
+	} else {
+		pooler, poolerErr := supa.DiscoverPooler(ctx, info.Region)
+		if poolerErr != nil || !pooler.Reachable {
+			fmt.Fprintf(os.Stderr, "Warning: pooler not reachable in region %s. Skipping DATABASE_URL. It may still be provisioning (5-15 min).\n", info.Region)
+		} else {
+			// Prompt for DB password.
+			fmt.Fprintf(os.Stderr, "Enter your Supabase database password (for DATABASE_URL): ")
+			var dbPassword string
+			if term.IsTerminal(int(os.Stdin.Fd())) {
+				raw, pwErr := term.ReadPassword(int(os.Stdin.Fd()))
+				fmt.Fprintln(os.Stderr)
+				if pwErr != nil {
+					fmt.Fprintf(os.Stderr, "Warning: could not read password: %s. Skipping DATABASE_URL.\n", pwErr)
+				} else {
+					dbPassword = string(raw)
+				}
+			} else {
+				scanner := bufio.NewScanner(os.Stdin)
+				if scanner.Scan() {
+					dbPassword = scanner.Text()
+				}
+			}
+
+			if dbPassword != "" {
+				databaseURL = supa.BuildDatabaseURL(ref, pooler.Host, pooler.TransactionPort, dbPassword)
+			}
+		}
+	}
+
 	// Sync each key into Vercel.
 	envVars := []struct {
 		key   string
@@ -266,6 +305,12 @@ func runEnvSync(cmd *cobra.Command, args []string) error {
 		{"SUPABASE_URL", supabaseURL},
 		{"SUPABASE_ANON_KEY", anonKey},
 		{"SUPABASE_SERVICE_ROLE_KEY", serviceRoleKey},
+	}
+	if databaseURL != "" {
+		envVars = append(envVars, struct {
+			key   string
+			value string
+		}{"DATABASE_URL", databaseURL})
 	}
 
 	results := map[string]string{}
@@ -279,6 +324,10 @@ func runEnvSync(cmd *cobra.Command, args []string) error {
 		} else {
 			results[ev.key] = "synced"
 		}
+	}
+
+	if databaseURL == "" {
+		results["DATABASE_URL"] = "skipped (see warnings above)"
 	}
 
 	if len(failures) > 0 {
