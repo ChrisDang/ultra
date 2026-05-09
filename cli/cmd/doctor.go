@@ -7,11 +7,11 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/christopherdang/vibecloud/cli/internal/config"
 	vexec "github.com/christopherdang/vibecloud/cli/internal/exec"
 	"github.com/christopherdang/vibecloud/cli/internal/output"
+	supa "github.com/christopherdang/vibecloud/cli/internal/supabase"
 	versionpkg "github.com/christopherdang/vibecloud/cli/internal/version"
 	"github.com/spf13/cobra"
 )
@@ -125,7 +125,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	if contains(projCfg.DetectedStack.Providers, "vercel") && contains(projCfg.DetectedStack.Providers, "supabase") {
 		// Check for Supabase IPv6 / connection pooler issue.
 		if ref := getSupabaseProjectRef(cwd); ref != "" {
-			connectivity = checkVercelSupabaseConnectivity(ref, &warnings)
+			connectivity = checkVercelSupabaseConnectivity(ctx, ref, &warnings)
 		}
 	}
 
@@ -249,39 +249,62 @@ func getSupabaseProjectRef(cwd string) string {
 
 // checkVercelSupabaseConnectivity checks for IPv6/pooler connectivity issues
 // between Vercel Functions and Supabase Postgres.
-func checkVercelSupabaseConnectivity(ref string, warnings *[]string) map[string]interface{} {
-	hasIPv4 := false
-	poolerOk := false
+func checkVercelSupabaseConnectivity(ctx context.Context, ref string, warnings *[]string) map[string]interface{} {
+	result := map[string]interface{}{
+		"ipv4_available":   false,
+		"pooler_reachable": false,
+	}
 
-	// DNS lookup for direct Postgres.
+	// Check project status via `supabase projects list -o json`.
+	info, infoErr := supa.GetProjectInfo(ctx, ref)
+	if infoErr != nil {
+		*warnings = append(*warnings, fmt.Sprintf("Could not fetch Supabase project info: %s. Pooler check skipped.", infoErr))
+		result["recommendation"] = "Run 'vibecloud login --provider supabase' to authenticate, then re-run doctor."
+		return result
+	}
+
+	result["project_status"] = info.Status
+	result["region"] = info.Region
+
+	if info.IsPaused() {
+		*warnings = append(*warnings, "Supabase project is paused (INACTIVE). Run 'supabase projects unpause --project-ref "+ref+"' to resume. The connection pooler will not be available until the project is active.")
+		result["recommendation"] = "Unpause the project first, then wait 5-15 minutes for the pooler to provision."
+		return result
+	}
+
+	if info.IsStartingUp() {
+		*warnings = append(*warnings, "Supabase project is starting up (COMING_UP). The connection pooler may take 5-15 minutes to re-provision after unpausing.")
+		result["recommendation"] = "Wait for project status to become ACTIVE_HEALTHY, then re-run 'vibecloud doctor'."
+		return result
+	}
+
+	// DNS lookup for direct Postgres — check IPv4 availability.
 	addrs, err := net.LookupHost("db." + ref + ".supabase.co")
 	if err == nil {
 		for _, addr := range addrs {
 			if strings.Contains(addr, ".") && !strings.Contains(addr, ":") {
-				hasIPv4 = true
+				result["ipv4_available"] = true
 				break
 			}
 		}
 	}
 
-	if !hasIPv4 {
-		*warnings = append(*warnings, "Supabase direct Postgres resolves to IPv6 only — Vercel Functions cannot connect via direct Postgres. Use PostgREST (HTTP API) or the connection pooler instead.")
+	if !result["ipv4_available"].(bool) {
+		*warnings = append(*warnings, "Supabase direct Postgres resolves to IPv6 only — Vercel Functions cannot connect via direct Postgres. Use the connection pooler or PostgREST (HTTP API) instead.")
 	}
 
-	// TCP dial test to pooler.
-	conn, dialErr := net.DialTimeout("tcp", "aws-0-us-east-1.pooler.supabase.com:6543", 5*time.Second)
-	if dialErr != nil {
-		*warnings = append(*warnings, "Supabase connection pooler is not reachable (may still be provisioning for new projects — can take 5-15 minutes). Recommend using PostgREST approach: set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY via 'vibecloud env sync'.")
+	// Dynamic pooler discovery.
+	pooler, poolerErr := supa.DiscoverPooler(ctx, info.Region)
+	if poolerErr != nil || !pooler.Reachable {
+		*warnings = append(*warnings, fmt.Sprintf("Supabase connection pooler is not reachable in region %s (may still be provisioning — can take 5-15 minutes). Run 'vibecloud env sync' to sync PostgREST credentials as a fallback.", info.Region))
+		result["recommendation"] = "Use PostgREST (vibecloud env sync) for Vercel+Supabase until pooler is ready."
 	} else {
-		poolerOk = true
-		conn.Close()
+		result["pooler_reachable"] = true
+		result["pooler_host"] = pooler.Host
+		result["recommendation"] = fmt.Sprintf("Pooler reachable at %s. Run 'vibecloud env sync' to configure DATABASE_URL.", pooler.Host)
 	}
 
-	return map[string]interface{}{
-		"ipv4_available":   hasIPv4,
-		"pooler_reachable": poolerOk,
-		"recommendation":   "Use PostgREST (vibecloud env sync) for Vercel+Supabase. Direct Postgres requires IPv4 which Supabase does not provide.",
-	}
+	return result
 }
 
 // checkLinked verifies the provider is linked to a project in the current dir.
