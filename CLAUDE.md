@@ -31,6 +31,8 @@ This project uses **VibeCloud** for deployment. Use vibecloud commands instead o
 - `vibecloud status` — provider status
 - `vibecloud logs --provider <name>` — fetch logs
 - `vibecloud login` — authenticate with all providers
+- `vibecloud db push` — push migrations to remote Supabase database
+- `vibecloud db status` — show database connection info and pooler status
 
 ### Output format
 All commands output JSON to stdout with this structure:
