@@ -279,6 +279,8 @@ This project uses **VibeCloud** for deployment. Use vibecloud commands instead o
 - `+"`vibecloud env sync`"+` — sync Supabase keys to Vercel
 - `+"`vibecloud env list`"+` — list environment variables
 - `+"`vibecloud env rm <KEY>`"+` — remove an environment variable
+- `+"`vibecloud db push`"+` — push migrations to remote Supabase database
+- `+"`vibecloud db status`"+` — show database connection info and pooler status
 
 ### Agent flags
 - `+"`--machine`"+` — emit NDJSON progress events to stderr, suppress ANSI formatting
@@ -314,6 +316,31 @@ Use `+"`vibecloud env sync`"+` to automatically wire Supabase keys into Vercel e
 
 ### Providers: %s
 `, strings.Join(stack.Providers, "/"), strings.Join(stack.Providers, ", "))
+
+	// Add Supabase + Vercel connectivity guidance if both providers are present.
+	hasSupabase := false
+	hasVercel := false
+	for _, p := range stack.Providers {
+		if p == "supabase" {
+			hasSupabase = true
+		}
+		if p == "vercel" {
+			hasVercel = true
+		}
+	}
+	if hasSupabase && hasVercel {
+		vibeSection += `
+### Supabase + Vercel connectivity
+Vercel Functions cannot connect to Supabase Postgres directly (IPv6-only).
+You MUST use the connection pooler (Supavisor):
+- Transaction mode: port 6543 (use for Vercel Functions — short-lived, no prepared statements)
+- Session mode: port 5432 (use for migrations with pg_dump/pg_restore)
+- Connection format: ` + "`postgresql://postgres.[REF]:[PASSWORD]@[POOLER_HOST]:[PORT]/postgres`" + `
+- Never use the direct connection (` + "`db.[REF].supabase.co`" + `) from Vercel Functions.
+Run ` + "`vibecloud env sync`" + ` to auto-configure DATABASE_URL with the correct pooler endpoint.
+Run ` + "`vibecloud db status`" + ` to check pooler reachability and project health.
+`
+	}
 
 	// Check if CLAUDE.md exists.
 	if existing, err := os.ReadFile(claudeMDPath); err == nil {
